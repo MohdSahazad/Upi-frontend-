@@ -23,6 +23,14 @@
     <button onclick="payUPI()">1. Pay with UPI App</button>
     <button onclick="showQR()">2. Show QR Code</button>
     <div id="qr"></div>
+
+    <div id="qr-section">
+  <h2>QR Code Generate</h2>
+  <input type="number" id="amount" placeholder="Amount daalo" value="500">
+  <input type="text" id="txnid" placeholder="Transaction ID" value="">
+  <button onclick="generateQR()">QR Generate Karo</button>
+  <div id="qr-box" style="text-align:center; margin-top:15px; padding:15px; border:2px dashed #4CAF50; display:none;"></div>
+</div>
     
     <button style="background:#FF6F00" onclick="confirmPayment()">3. I Have Paid</button>
     <p id="txnid" style="font-size:12px; color:gray;"></p>
@@ -64,7 +72,6 @@ function showQR() {
   document.getElementById('qr').innerHTML = "";
   QRCode.toCanvas(document.getElementById('qr'), upiURL, {width:220});
 }
-
 function saveTxn(name, amount, txnid) {
   fetch(BACKEND_URL + '/create-txn', {  // 👈 Yaha change kiya
     method: 'POST',
