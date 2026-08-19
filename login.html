@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Login</title>
+<style>
+  body { font-family: Arial; background: #f2f2f2; display: flex; justify-content: center; padding-top: 100px; }
+  .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 320px; }
+  input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; }
+  button { background: #0F9D58; color: white; border: none; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="text-align:center; color:#0F9D58">Admin Login</h2>
+    <input type="text" id="user" placeholder="Username">
+    <input type="password" id="pass" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p id="error" style="color:red;"></p>
+  </div>
+
+<script>
+let BACKEND_URL = "https://web-production-de639.up.railway.app"; // 👈 Yaha apna Railway URL daalo
+
+async function login() {
+  let user = document.getElementById('user').value;
+  let pass = document.getElementById('pass').value;
+  
+  let res = await fetch(BACKEND_URL + '/login', {  // 👈 Yaha change kiya
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({username: user, password: pass})
+  });
+  
+  if(res.ok) {
+    // Login ke baad admin page bhi backend url se khulega
+    window.location.href = BACKEND_URL + '/admin.html'; 
+  } else {
+    document.getElementById('error').innerText = "Username ya Password galat hai";
+  }
+}
+</script>
+</body>
+</html>
