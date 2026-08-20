@@ -43,11 +43,12 @@
   <p class="secure">🔒 256-bit SSL Secured | PCI-DSS Compliant</p>
 </div>
 
+  
 <!-- PAGE 2: ADMIN LOGIN -->
 <div class="card page" id="loginPage">
   <div class="logo">🔑 Admin Login</div>
-  <input type="text" id="adminUser" placeholder="Username" value="admin">
-  <input type="password" id="adminPass" placeholder="Password" value="admin@123">
+  <input type="text" id="adminUser" placeholder="Username" autocomplete="off">
+  <input type="password" id="adminPass" placeholder="Password" autocomplete="off">
   <button onclick="doLogin()">Login</button>
   <p id="loginErr" style="color:red"></p>
   <button style="background:gray" onclick="showPage('customer')">Wapas Home</button>
