@@ -10,7 +10,7 @@
   input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
   button { background: #0F9D58; color: white; border: none; font-size: 16px; cursor: pointer; font-weight: bold; }
   button:hover { background: #0b8047; }
-  #qr canvas, #qr img { margin: 15px auto; display: block; } /* img bhi add kiya */
+  #qr img { margin: 15px auto; display: block; }
   .secure { font-size: 12px; color: green; margin-top: 10px; }
   .top-btn { position: absolute; top: 15px; right: 15px; padding:8px 15px; background:red; color:white; border:none; border-radius:5px; cursor:pointer; }
   table { width:100%; border-collapse: collapse; margin-top: 15px; font-size: 12px;}
@@ -22,29 +22,20 @@
 </head>
 <body>
 
-<!-- TOP BUTTON -->
 <button class="top-btn" id="topBtn" onclick="showPage('login')">Admin Login</button>
 
-<!-- PAGE 1: CUSTOMER PAYMENT -->
 <div class="card page active" id="customerPage">
   <div class="logo">🏦 Direct UPI Payment</div>
-  
   <input type="text" id="name" placeholder="Enter Your Name" required>
   <input type="number" id="amount" placeholder="Enter Amount ₹" value="500" required>
-  
   <button onclick="payUPI()">1. Pay with UPI App</button>
   <button onclick="showQR()">2. Show QR Code</button>
   <div id="qr"></div>
-  
   <button style="background:#FF6F00" onclick="confirmPayment()">3. I Have Paid</button>
   <p id="txnid" style="font-size:12px; color:gray;"></p>
-  
   <p class="secure">🔒 Payment is manually verified for 100% security</p>
-  <p class="secure">🔒 256-bit SSL Secured | PCI-DSS Compliant</p>
 </div>
 
-  
-<!-- PAGE 2: ADMIN LOGIN -->
 <div class="card page" id="loginPage">
   <div class="logo">🔑 Admin Login</div>
   <input type="text" id="adminUser" placeholder="Username" autocomplete="off">
@@ -54,7 +45,6 @@
   <button style="background:gray" onclick="showPage('customer')">Wapas Home</button>
 </div>
 
-<!-- PAGE 3: ADMIN PANEL -->
 <div class="card page" id="adminPage" style="width: 90%; max-width: 900px;">
   <div class="logo">📊 Admin Panel</div>
   <button style="background:red; width:auto; padding:8px 15px; float:right;" onclick="logout()">Logout</button>
@@ -63,20 +53,17 @@
   <div id="txnTable">Loading...</div>
 </div>
 
-<!-- CHANGE 1: QR LIBRARY BADLI -->
 <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/master/qrcode.min.js"></script>
 <script>
-let YOUR_UPI = "abhi31845@ptaxis"; // Aapka UPI
-let BACKEND_URL = "https://web-production-de639.up.railway.app"; // 👈 Yaha apna Railway URL daalo
+let YOUR_UPI = "abhi31845@ptaxis";
+let BACKEND_URL = "https://web-production-de639.up.railway.app";
 let currentTxn = "";
 
-// PAGE SWITCH KARNE KA FUNCTION
 function showPage(page){
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   if(page === 'customer'){
     document.getElementById('customerPage').classList.add('active');
     document.getElementById('topBtn').style.display = 'block';
-    document.getElementById('topBtn').innerText = 'Admin Login';
   }
   if(page === 'login'){
     document.getElementById('loginPage').classList.add('active');
@@ -89,7 +76,6 @@ function showPage(page){
   }
 }
 
-// 1. ADMIN LOGIN
 function doLogin(){
   let u = document.getElementById('adminUser').value;
   let p = document.getElementById('adminPass').value;
@@ -105,16 +91,13 @@ function logout(){
   showPage('login');
 }
 
-// 2. CUSTOMER WALA CODE
 function payUPI() {
   let name = document.getElementById('name').value;
   let amount = document.getElementById('amount').value;
   if(!name || !amount) return alert("Name and Amount required");
-  
   currentTxn = "TXN" + Date.now();
   document.getElementById('txnid').innerText = "Your TXN ID: " + currentTxn;
   saveTxn(name, amount, currentTxn);
-
   let upiURL = `upi://pay?pa=${YOUR_UPI}&pn=MyBusiness&am=${amount}&tn=${currentTxn}&tr=${currentTxn}&cu=INR`;
   window.location.href = upiURL; 
 }
@@ -123,22 +106,12 @@ function showQR() {
   let name = document.getElementById('name').value;
   let amount = document.getElementById('amount').value;
   if(!name || !amount) return alert("Name and Amount required");
-
   currentTxn = "TXN" + Date.now();
   document.getElementById('txnid').innerText = "Your TXN ID: " + currentTxn;
   saveTxn(name, amount, currentTxn);
-
   let upiURL = `upi://pay?pa=${YOUR_UPI}&pn=MyBusiness&am=${amount}&tn=${currentTxn}&tr=${currentTxn}&cu=INR`;
-  document.getElementById('qr').innerHTML = ""; // clear old QR
-  
-  // CHANGE 2: QR BANANE KA TARIKA BADLA
-  new QRCode(document.getElementById("qr"), {
-    text: upiURL,
-    width: 220,
-    height: 220,
-    colorDark : "#000000",
-    colorLight : "#ffffff",
-  });
+  document.getElementById('qr').innerHTML = "";
+  new QRCode(document.getElementById("qr"), { text: upiURL, width: 220, height: 220 });
 }
 
 function saveTxn(name, amount, txnid) {
@@ -154,27 +127,22 @@ function confirmPayment() {
   alert(`TXN ID: ${currentTxn}\n\nPlease send screenshot to admin WhatsApp.\nWe will verify and confirm in 5 minutes.`);
 }
 
-// 3. ADMIN PANEL - TRANSACTIONS LOAD
 function loadTxns(){
-  if(localStorage.getItem("isAdmin") !== "true"){
-    showPage('login');
-    return;
-  }
+  if(localStorage.getItem("isAdmin") !== "true"){ showPage('login'); return; }
+  document.getElementById('txnTable').innerText = "Loading...";
   fetch(BACKEND_URL + '/transactions')
   .then(res => res.json())
   .then(data => {
+    if(data.length === 0){ document.getElementById('txnTable').innerHTML = "Koi transaction nahi hai"; return; }
     let html = `<table><tr><th>Time</th><th>Name</th><th>Amount</th><th>TXN ID</th><th>Status</th></tr>`;
     data.forEach(txn => {
       html += `<tr><td>${new Date(txn.created_at).toLocaleString()}</td><td>${txn.name}</td><td>₹${txn.amount}</td><td>${txn.txnid}</td><td>${txn.status}</td></tr>`;
     });
     html += `</table>`;
     document.getElementById('txnTable').innerHTML = html;
-  }).catch(err => document.getElementById('txnTable').innerHTML = "Backend connect nahi ho raha");
-}
-
-// Page load pe check karo login hai kya
-if(window.location.hash === '#admin' && localStorage.getItem("isAdmin") === "true"){
-  showPage('admin');
+  }).catch(err => {
+    document.getElementById('txnTable').innerHTML = "Backend connect nahi ho raha - CORS check karo<br><small>" + err + "</small>";
+  });
 }
 </script>
 </body>
