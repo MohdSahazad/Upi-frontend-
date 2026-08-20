@@ -18,6 +18,7 @@
   th { background: #0F9D58; color: white; }
   .page { display: none; }
   .page.active { display: block; }
+  .s-btn { padding:5px 10px; font-size:11px; width:auto; margin:2px; border-radius:4px; }
 </style>
 </head>
 <body>
@@ -45,7 +46,7 @@
   <button style="background:gray" onclick="showPage('customer')">Wapas Home</button>
 </div>
 
-<div class="card page" id="adminPage" style="width: 90%; max-width: 900px;">
+<div class="card page" id="adminPage" style="width: 95%; max-width: 900px;">
   <div class="logo">📊 Admin Panel</div>
   <button style="background:red; width:auto; padding:8px 15px; float:right;" onclick="logout()">Logout</button>
   <button style="background:gray; width:auto; padding:8px 15px;" onclick="showPage('customer')">Customer Page</button>
@@ -56,8 +57,7 @@
 <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/master/qrcode.min.js"></script>
 <script>
 let YOUR_UPI = "abhi31845@ptaxis";
-  let BACKEND_URL = "https://web-production-2f2524.up.railway.app";
-  
+let BACKEND_URL = "https://web-production-2f524.up.railway.app";
 let currentTxn = "";
 
 function showPage(page){
@@ -77,17 +77,41 @@ function showPage(page){
   }
 }
 
-function doLogin(){
-  let u = document.getElementById('adminUser').value;
-  let p = document.getElementById('adminPass').value;
-  if(u === "admin" && p === "admin@123"){
-    localStorage.setItem("isAdmin", "true");
-    showPage('admin');
-  } else {
-    document.getElementById('loginErr').innerText = "Galat Username ya Password";
+async function doLogin(){
+  let u = document.getElementById('adminUser').value.trim();
+  let p = document.getElementById('adminPass').value.trim();
+  if(!u || !p) return alert("Username/Password likho");
+  
+  document.getElementById('loginErr').innerText = "Checking...";
+  try {
+    let res = await fetch(BACKEND_URL + '/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username: u, password: p}),
+      credentials: 'include'
+    });
+    // Backend redirect deta hai ya 200
+    if(res.redirected || res.ok){
+      localStorage.setItem("isAdmin", "true");
+      showPage('admin');
+    } else {
+      let txt = await res.text();
+      if(txt.includes("Wrong") || res.status===401) document.getElementById('loginErr').innerText = "Galat Username ya Password";
+      else { localStorage.setItem("isAdmin", "true"); showPage('admin'); }
+    }
+  } catch(e){
+    // Agar fetch fail bhi ho jaye to local check
+    if(u === "admin" && p === "admin@123"){
+      localStorage.setItem("isAdmin", "true");
+      showPage('admin');
+    } else {
+      document.getElementById('loginErr').innerText = "Backend error: " + e;
+    }
   }
 }
+
 function logout(){
+  fetch(BACKEND_URL + '/logout', {credentials:'include'});
   localStorage.removeItem("isAdmin");
   showPage('login');
 }
@@ -137,13 +161,45 @@ function loadTxns(){
     if(data.length === 0){ document.getElementById('txnTable').innerHTML = "Koi transaction nahi hai"; return; }
     let html = `<table><tr><th>Time</th><th>Name</th><th>Amount</th><th>TXN ID</th><th>Status</th></tr>`;
     data.forEach(txn => {
-      html += `<tr><td>${new Date(txn.created_at).toLocaleString()}</td><td>${txn.name}</td><td>₹${txn.amount}</td><td>${txn.txnid}</td><td>${txn.status}</td></tr>`;
+      let color = txn.status === 'Success' ? 'green' : txn.status === 'Failed' ? 'red' : 'orange';
+      html += `<tr>
+        <td>${new Date(txn.created_at).toLocaleString()}</td>
+        <td>${txn.name}</td>
+        <td>₹${txn.amount}</td>
+        <td>${txn.txnid}</td>
+        <td>
+          <b style="color:${color}">${txn.status}</b><br>
+          <button class="s-btn" style="background:green" onclick="updateStatus('${txn.txnid}','Success')">Success</button>
+          <button class="s-btn" style="background:red" onclick="updateStatus('${txn.txnid}','Failed')">Failed</button>
+        </td>
+      </tr>`;
     });
     html += `</table>`;
     document.getElementById('txnTable').innerHTML = html;
   }).catch(err => {
-    document.getElementById('txnTable').innerHTML = "Backend connect nahi ho raha - CORS check karo<br><small>" + err + "</small>";
+    document.getElementById('txnTable').innerHTML = "Backend connect nahi ho raha<br><small>" + err + "</small>";
   });
+}
+
+async function updateStatus(txnid, newStatus){
+  if(!confirm(txnid + " ko " + newStatus + " karna hai?")) return;
+  try {
+    let res = await fetch(BACKEND_URL + '/update-status', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({txnid: txnid, status: newStatus}),
+      credentials: 'include'
+    });
+    let data = await res.json();
+    if(data.success){
+      alert("Updated to " + newStatus);
+      loadTxns();
+    } else {
+      alert("Error: " + JSON.stringify(data));
+    }
+  } catch(e){
+    alert("Update fail: " + e);
+  }
 }
 </script>
 </body>
