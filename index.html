@@ -2,49 +2,65 @@
 <html>
 <head>
 <title>Pay Direct to Bank</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  body { font-family: Arial; background: #f2f2f2; display: flex; justify-content: center; padding-top: 50px; }
-  .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 380px; text-align:center; }
+  body { font-family: Arial; background: #f2f2f2; display: flex; justify-content: center; padding-top: 30px; }
+  .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 380px; text-align:center; margin: 10px; }
   .logo { font-size: 24px; font-weight: bold; color: #0F9D58; margin-bottom: 20px; }
   input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
   button { background: #0F9D58; color: white; border: none; font-size: 16px; cursor: pointer; font-weight: bold; }
   button:hover { background: #0b8047; }
   #qr canvas { margin: 15px auto; display: block; }
   .secure { font-size: 12px; color: green; margin-top: 10px; }
+  .top-btn { position: absolute; top: 15px; right: 15px; padding:8px 15px; background:red; color:white; border:none; border-radius:5px; cursor:pointer; }
+  table { width:100%; border-collapse: collapse; margin-top: 15px; font-size: 12px;}
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background: #0F9D58; color: white; }
+  .page { display: none; }
+  .page.active { display: block; }
 </style>
 </head>
 <body>
 
-  <a href="/admin.html">
-  <button style="padding:10px 20px; background:red; color:white; border:none; border-radius:5px;">
-    Admin Login
-  </button>
-</a>
-  <div class="card">
-    <div class="logo">🏦 Direct UPI Payment</div>
-    
-    <input type="text" id="name" placeholder="Enter Your Name" required>
-    <input type="number" id="amount" placeholder="Enter Amount ₹" value="500" required>
-    
-    <button onclick="payUPI()">1. Pay with UPI App</button>
-    <button onclick="showQR()">2. Show QR Code</button>
-    <div id="qr"></div>
+<!-- TOP BUTTON -->
+<button class="top-btn" id="topBtn" onclick="showPage('login')">Admin Login</button>
 
-    <div id="qr-section">
-  <h2>QR Code Generate</h2>
-  <input type="number" id="amount" placeholder="Amount daalo" value="500">
-  <input type="text" id="txnid" placeholder="Transaction ID" value="">
-  <button onclick="generateQR()">QR Generate Karo</button>
-  <div id="qr-box" style="text-align:center; margin-top:15px; padding:15px; border:2px dashed #4CAF50; display:none;"></div>
+<!-- PAGE 1: CUSTOMER PAYMENT -->
+<div class="card page active" id="customerPage">
+  <div class="logo">🏦 Direct UPI Payment</div>
+  
+  <input type="text" id="name" placeholder="Enter Your Name" required>
+  <input type="number" id="amount" placeholder="Enter Amount ₹" value="500" required>
+  
+  <button onclick="payUPI()">1. Pay with UPI App</button>
+  <button onclick="showQR()">2. Show QR Code</button>
+  <div id="qr"></div>
+  
+  <button style="background:#FF6F00" onclick="confirmPayment()">3. I Have Paid</button>
+  <p id="txnid" style="font-size:12px; color:gray;"></p>
+  
+  <p class="secure">🔒 Payment is manually verified for 100% security</p>
+  <p class="secure">🔒 256-bit SSL Secured | PCI-DSS Compliant</p>
 </div>
-    
-    <button style="background:#FF6F00" onclick="confirmPayment()">3. I Have Paid</button>
-    <p id="txnid" style="font-size:12px; color:gray;"></p>
-    
-    <p class="secure">🔒 Payment is manually verified for 100% security</p>
-    <p class="secure">🔒 256-bit SSL Secured | PCI-DSS Compliant</p>
- 
-  </div>
+
+<!-- PAGE 2: ADMIN LOGIN -->
+<div class="card page" id="loginPage">
+  <div class="logo">🔑 Admin Login</div>
+  <input type="text" id="adminUser" placeholder="Username" value="admin">
+  <input type="password" id="adminPass" placeholder="Password" value="admin@123">
+  <button onclick="doLogin()">Login</button>
+  <p id="loginErr" style="color:red"></p>
+  <button style="background:gray" onclick="showPage('customer')">Wapas Home</button>
+</div>
+
+<!-- PAGE 3: ADMIN PANEL -->
+<div class="card page" id="adminPage" style="width: 90%; max-width: 900px;">
+  <div class="logo">📊 Admin Panel</div>
+  <button style="background:red; width:auto; padding:8px 15px; float:right;" onclick="logout()">Logout</button>
+  <button style="background:gray; width:auto; padding:8px 15px;" onclick="showPage('customer')">Customer Page</button>
+  <button style="background:blue; width:auto; padding:8px 15px;" onclick="loadTxns()">Refresh</button>
+  <div id="txnTable">Loading...</div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script>
@@ -52,6 +68,42 @@ let YOUR_UPI = "abhi31845@ptaxis"; // Aapka UPI
 let BACKEND_URL = "https://web-production-de639.up.railway.app"; // 👈 Yaha apna Railway URL daalo
 let currentTxn = "";
 
+// PAGE SWITCH KARNE KA FUNCTION
+function showPage(page){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  if(page === 'customer'){
+    document.getElementById('customerPage').classList.add('active');
+    document.getElementById('topBtn').style.display = 'block';
+    document.getElementById('topBtn').innerText = 'Admin Login';
+  }
+  if(page === 'login'){
+    document.getElementById('loginPage').classList.add('active');
+    document.getElementById('topBtn').style.display = 'none';
+  }
+  if(page === 'admin'){
+    document.getElementById('adminPage').classList.add('active');
+    document.getElementById('topBtn').style.display = 'none';
+    loadTxns();
+  }
+}
+
+// 1. ADMIN LOGIN
+function doLogin(){
+  let u = document.getElementById('adminUser').value;
+  let p = document.getElementById('adminPass').value;
+  if(u === "admin" && p === "admin@123"){
+    localStorage.setItem("isAdmin", "true");
+    showPage('admin');
+  } else {
+    document.getElementById('loginErr').innerText = "Galat Username ya Password";
+  }
+}
+function logout(){
+  localStorage.removeItem("isAdmin");
+  showPage('login');
+}
+
+// 2. CUSTOMER WALA CODE
 function payUPI() {
   let name = document.getElementById('name').value;
   let amount = document.getElementById('amount').value;
@@ -78,8 +130,9 @@ function showQR() {
   document.getElementById('qr').innerHTML = "";
   QRCode.toCanvas(document.getElementById('qr'), upiURL, {width:220});
 }
+
 function saveTxn(name, amount, txnid) {
-  fetch(BACKEND_URL + '/create-txn', {  // 👈 Yaha change kiya
+  fetch(BACKEND_URL + '/create-txn', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({name, amount, txnid})
@@ -89,6 +142,29 @@ function saveTxn(name, amount, txnid) {
 function confirmPayment() {
   if(!currentTxn) return alert("Pehle Pay ya QR generate karo");
   alert(`TXN ID: ${currentTxn}\n\nPlease send screenshot to admin WhatsApp.\nWe will verify and confirm in 5 minutes.`);
+}
+
+// 3. ADMIN PANEL - TRANSACTIONS LOAD
+function loadTxns(){
+  if(localStorage.getItem("isAdmin") !== "true"){
+    showPage('login');
+    return;
+  }
+  fetch(BACKEND_URL + '/transactions')
+  .then(res => res.json())
+  .then(data => {
+    let html = `<table><tr><th>Time</th><th>Name</th><th>Amount</th><th>TXN ID</th><th>Status</th></tr>`;
+    data.forEach(txn => {
+      html += `<tr><td>${new Date(txn.created_at).toLocaleString()}</td><td>${txn.name}</td><td>₹${txn.amount}</td><td>${txn.txnid}</td><td>${txn.status}</td></tr>`;
+    });
+    html += `</table>`;
+    document.getElementById('txnTable').innerHTML = html;
+  }).catch(err => document.getElementById('txnTable').innerHTML = "Backend connect nahi ho raha");
+}
+
+// Page load pe check karo login hai kya
+if(window.location.hash === '#admin' && localStorage.getItem("isAdmin") === "true"){
+  showPage('admin');
 }
 </script>
 </body>
